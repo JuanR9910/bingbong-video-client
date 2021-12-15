@@ -1,5 +1,5 @@
 // import React, { Component, Fragment } from 'react'
-import React, { useState, Fragment } from 'react'
+import React, { useState, Fragment, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
 
@@ -14,14 +14,57 @@ import SignOut from './components/auth/SignOut'
 import ChangePassword from './components/auth/ChangePassword'
 import Profile from './components/pages/Profile'
 import Video from './components/modules/Video'
+
 import Comment from './components/modules/Video'
 
 const App = () => {
 
   const [user, setUser] = useState(null)
   const [msgAlerts, setMsgAlerts] = useState([])
+  const [curProfile, setCurProfile] = useState([])
 
-  console.log('user in app', user)
+
+
+// build the forms
+// when creating a json payload, always initialize it to the current user
+// make sure nothing runs in app because the user isn't logged in technically...
+// Running it in profile...
+
+// THIS ASYNC STRATEGY WORKED...
+//   useEffect( async ()=>{
+//           const response = await fetch(`http://localhost:8000/users`)
+//           const data = await response.json()
+//           const { profile } = data
+
+//           // let foundUser = data.filter((user)=>{
+//           //   if ((user))
+//           // })
+//           setCurProfile(profile)
+//           console.table(data)
+//           console.table(profile)
+  
+//       },[])
+
+const getAllProfile = () => {
+  if (user !== null) {
+    fetch(`http://localhost:8000/users/${user._id}`)
+    .then(response => response.json())
+    .then((foundUserResponse) => {
+      console.log("trying to render: ", foundUserResponse)
+      let foundUser = foundUserResponse.profile.filter((cUser)=>{
+        return user._id === cUser.owner })
+      if (foundUser === null) {
+        setCurProfile(null)
+      }
+      console.log("this would be the matching user..", foundUser)
+      setCurProfile(foundUser.json()) 
+    })
+    .catch(err => console.log(err))
+
+  }
+}
+
+
   console.log('message alerts', msgAlerts)
   const clearUser = () => {
     console.log('clear user ran')
@@ -42,21 +85,17 @@ const App = () => {
       )
 		})
 	}
+  //upon sign in we should "pass down profile info with the user" as a prop to any component we want
+  // we refactor 
+  // 
+
+
 
 		return (
       <Fragment>
         <Header user={user} />
-        {/* <iframe
-          width="560"
-          height="315"
-          src="https://www.youtube.com/embed/w7ejDZ8SWv8"
-          title="YouTube video player"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe> */}
         <Routes>
-          <Route path="/" element={<Home msgAlert={msgAlert} user={user} />} />
+          <Route path="/" element={<Home msgAlert={msgAlert} user={user}  />} />
           <Route
             path="/sign-up"
             element={<SignUp msgAlert={msgAlert} setUser={setUser} />}
@@ -81,7 +120,7 @@ const App = () => {
             path="my-profile"
             element={
               <RequireAuth user={user}>
-                <Profile />
+                <Profile getAllProfile={getAllProfile} curProfile={curProfile} user={user}/>
               </RequireAuth>
             }
           />
